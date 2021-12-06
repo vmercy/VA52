@@ -1,6 +1,8 @@
+from operator import index
 import localizeDigits
 import numpy as np
 import math
+import json
 import cv2
 
 def groupDigitsByClass(digitsSamples, nbDigitsPerClass):
@@ -106,19 +108,25 @@ def probability(profile, digit, classesCenters):
   return math.exp(-dist(profile, classesCenters[digit]))/computeProbSum(profile, classesCenters)
 
 if __name__ == "__main__":
-  nbLines = 20
+  nbLines = 8
   digitCenterVectors = learnDigits('app.tif',20,nbLines)
   testDigitsPositions = localizeDigits.getDigitsCoordinates('test.tif')
   im = cv2.imread('test.tif', cv2.IMREAD_GRAYSCALE)
-  for digit in testDigitsPositions:
+  probVectors = []
+  for indexDigit, digit in enumerate(testDigitsPositions):
     digitSubMatrix = im[digit[0][1]:digit[1][1],digit[0][0]:digit[1][0]]
     profile = getDigitProfile(digitSubMatrix, nbLines)
     recognizedDigit = -1
     maxProb = 0
+    probVectors.append([])
     for digitCandidate in range(10):
       newProb = probability(profile, digitCandidate, digitCenterVectors)
+      probVectors[indexDigit].append(newProb)
       if newProb>maxProb:
         maxProb=newProb
         recognizedDigit=digitCandidate
     print(recognizedDigit)
+  #print(probVectors)
+  with open('probabilities.json','w') as outfile:
+    json.dump(probVectors,outfile)
   #print(probability(digitCenterVectors[3],6,digitCenterVectors))
